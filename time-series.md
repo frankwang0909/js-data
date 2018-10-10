@@ -293,3 +293,442 @@ groupedByDateSeries.dates().map(function(date) {
 ```
 
 ### 2.2 计算每周开销情况
+
+完成了对每天开销情况的统计以后，我们就可以对更大时间范围的数据进行进一步的统计了，比如我们需要知道一周内的使用情况。那就可以在前面按天计算的前提下完成这个需求。
+
+事实上 Moment.js 库非常的“聪明”，它可以自动检测我们传入的时间参数的格式（整数时间戳、时间字符串、日期字符串等等），并转化为标准的 Moment 时间对象。那么这就意味着可以直接传入前面使用 `groupByDate.dates()` 方法所得到的日期集合来进行聚合。
+
+#### 1.增加统计方法：累加求和，求平均值
+
+```js
+function createTimeSeries(timeSeriesArray) {
+  const timeSeriesObject = {
+    // 将时间戳转换为 Moment 类的对象
+    array: timeSeriesArray.map(function(item) {
+      item.moment = moment(item.timestamp);
+      return item;
+    }),
+    // 抽象出按不同时间格式分组的方法
+    groupByFormat: function(formatPattern) {
+      return _.groupBy(this.array, function(item) {
+        return item.moment.format(formatPattern);
+      });
+    },
+    // 按天分组
+    groupByDate: function() {
+      // return this.groupByFormat("YYYY-MM-DD");
+      const groupedResult = {
+        // 按天分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY-MM-DD"),
+        // 返回数据集合的键，即日期，组成的数组
+        dates: function() {
+          return _.keys(this.map);
+        },
+        // 统计某个日期的 price 总和
+        sum: function(date) {
+          return _.sumBy(this.map[date], "price");
+        }
+      };
+      return groupedResult;
+    },
+    // 按周分组
+    groupByWeek: function() {
+      // return this.groupByFormat("YYYY-WW");
+      const groupedResult = {
+        // 按周分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY-WW"),
+        // 返回数据集合的键，即周，组成的数组
+        weeks: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一周内的 price 总和
+        sum: function(week) {
+          return _.sumBy(this.map[week], "price");
+        },
+        // 统计某一周内 平均每天的 price
+        average: function(week) {
+          const dates = this.map[week];
+
+          const sum = this.sum(week);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    },
+    // 按月分组
+    groupByMonth: function() {
+      // return this.groupByFormat("YYYY-MM");
+      const groupedResult = {
+        // 按月分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY"),
+        // 返回数据集合的键，即月，组成的数组
+        months: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一月内的 price 总和
+        sum: function(month) {
+          return _.sumBy(this.map[month], "price");
+        },
+        // 统计某一月内 平均每天的 price
+        average: function(month) {
+          const dates = this.map[month];
+
+          const sum = this.sum(month);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    },
+    // 按年分组
+    groupByYear: function() {
+      // return this.groupByFormat("YYYY");
+      const groupedResult = {
+        // 按年分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY"),
+        // 返回数据集合的键，即年，组成的数组
+        years: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一年内的 price 总和
+        sum: function(year) {
+          return _.sumBy(this.map[year], "price");
+        },
+        // 统计某一年内 平均每天的 price
+        average: function(year) {
+          const dates = this.map[year];
+
+          const sum = this.sum(year);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    }
+  };
+  return timeSeriesObject;
+}
+```
+
+#### 2.进一步抽象封装： 将 sum() 和 average() 从聚合结果中抽出
+
+```js
+function createTimeSeries(timeSeriesArray) {
+  const timeSeriesObject = {
+    // 将时间戳转换为 Moment 类的对象
+    array: timeSeriesArray.map(function(item) {
+      item.moment = moment(item.timestamp);
+      return item;
+    }),
+    // 抽象出按不同时间格式分组的方法
+    groupByFormat: function(formatPattern) {
+      return _.groupBy(this.array, function(item) {
+        return item.moment.format(formatPattern);
+      });
+    },
+    // 按天分组
+    groupByDate: function() {
+      // return this.groupByFormat("YYYY-MM-DD");
+      const groupedResult = {
+        // 按天分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY-MM-DD"),
+        // 返回数据集合的键，即日期，组成的数组
+        dates: function() {
+          return _.keys(this.map);
+        },
+        // 统计某个日期的 price 总和
+        sum: function(date) {
+          return _.sumBy(this.map[date], "price");
+        }
+      };
+      return groupedResult;
+    },
+    // 按周分组
+    groupByWeek: function() {
+      // return this.groupByFormat("YYYY-WW");
+      const groupedResult = {
+        // 按周分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY-WW"),
+        // 返回数据集合的键，即周，组成的数组
+        weeks: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一周内的 price 总和
+        sum: function(week) {
+          return _.sumBy(this.map[week], "price");
+        },
+        // 统计某一周内 平均每天的 price
+        average: function(week) {
+          const dates = this.map[week];
+
+          const sum = this.sum(week);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    },
+    // 按月分组
+    groupByMonth: function() {
+      // return this.groupByFormat("YYYY-MM");
+      const groupedResult = {
+        // 按月分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY-MM"),
+        // 返回数据集合的键，即月，组成的数组
+        months: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一月内的 price 总和
+        sum: function(month) {
+          return _.sumBy(this.map[month], "price");
+        },
+        // 统计某一月内 平均每天的 price
+        average: function(month) {
+          const dates = this.map[month];
+
+          const sum = this.sum(month);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    },
+    // 按年分组
+    groupByYear: function() {
+      // return this.groupByFormat("YYYY");
+      const groupedResult = {
+        // 按年分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY"),
+        // 返回数据集合的键，即年，组成的数组
+        years: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一年内的 price 总和
+        sum: function(year) {
+          return _.sumBy(this.map[year], "price");
+        },
+        // 统计某一年内 平均每天的 price
+        average: function(year) {
+          const dates = this.map[year];
+
+          const sum = this.sum(year);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    },
+    dates: function() {
+      return this.groupByDate().dates();
+    },
+    weeks: function() {
+      return this.groupByWeek().weeks();
+    },
+    months: function() {
+      return this.groupByMonth().months();
+    },
+    years: function() {
+      return this.groupByYear().years();
+    },
+    // 统计某一时间段内的总和
+    sum: function(unit, point) {
+      switch (unit) {
+        case "date":
+          return this.groupByDate().sum(point);
+
+        case "week":
+          return this.groupByWeek().sum(point);
+
+        case "month":
+          return this.groupByMonth().sum(point);
+
+        case "year":
+          return this.groupByYear().sum(point);
+      }
+    },
+    // 统计某一时间段内的平均值
+    average: function(unit, point) {
+      switch (unit) {
+        case "week":
+          return this.groupByWeek().average(point);
+
+        case "month":
+          return this.groupByMonth().average(point);
+
+        case "year":
+          return this.groupByYear().average(point);
+      }
+    }
+  };
+  return timeSeriesObject;
+}
+
+const timeSeries = createTimeSeries(transactions);
+console.log(timeSeries.sum("month", "2018-03")); //=> 192.75
+console.log(timeSeries.average("month", "2018-03")); //=> 96.375
+```
+
+#### 3.聚合缓存
+
+经过了三层的封装之后，各种的聚合、提取的调用次数变得比较多。而为了能够让程序运行更加顺畅，内存调度更为节约，可以使用`懒加载`的方式缓存一些经常使用的`聚合结果`。
+
+一般来说，缓存的存储位置是在`封装层级较底层`的位置，来进行存储和读取。而我们这里最为底层的封装位置则是最开始的 `groupByFormat` 函数。
+
+我们可以在 `createTimeSeries` 函数中、创建 `timeSeries` 对象之前定义一个 `caches` 对象。然后在 `groupByFormat` 中首先检查 `caches` 对象中是否存在当前 `formatPattern` 的结果缓存，若存在则将其作为当前结果返回；在完成计算后就将其存储到 `caches` 对象中。
+
+```js
+function createTimeSeries(timeSeriesArray) {
+  const timeSeriesObject = {
+    // 将时间戳转换为 Moment 类的对象
+    array: timeSeriesArray.map(function(item) {
+      item.moment = moment(item.timestamp);
+      return item;
+    }),
+    // 抽象出按不同时间格式分组的方法
+    groupByFormat: function(formatPattern) {
+      return _.groupBy(this.array, function(item) {
+        return item.moment.format(formatPattern);
+      });
+    },
+    // 按天分组
+    groupByDate: function() {
+      // return this.groupByFormat("YYYY-MM-DD");
+      const groupedResult = {
+        // 按天分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY-MM-DD"),
+        // 返回数据集合的键，即日期，组成的数组
+        dates: function() {
+          return _.keys(this.map);
+        },
+        // 统计某个日期的 price 总和
+        sum: function(date) {
+          return _.sumBy(this.map[date], "price");
+        }
+      };
+      return groupedResult;
+    },
+    // 按周分组
+    groupByWeek: function() {
+      // return this.groupByFormat("YYYY-WW");
+      const groupedResult = {
+        // 按周分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY-WW"),
+        // 返回数据集合的键，即周，组成的数组
+        weeks: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一周内的 price 总和
+        sum: function(week) {
+          return _.sumBy(this.map[week], "price");
+        },
+        // 统计某一周内 平均每天的 price
+        average: function(week) {
+          const dates = this.map[week];
+
+          const sum = this.sum(week);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    },
+    // 按月分组
+    groupByMonth: function() {
+      // return this.groupByFormat("YYYY-MM");
+      const groupedResult = {
+        // 按月分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY-MM"),
+        // 返回数据集合的键，即月，组成的数组
+        months: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一月内的 price 总和
+        sum: function(month) {
+          return _.sumBy(this.map[month], "price");
+        },
+        // 统计某一月内 平均每天的 price
+        average: function(month) {
+          const dates = this.map[month];
+
+          const sum = this.sum(month);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    },
+    // 按年分组
+    groupByYear: function() {
+      // return this.groupByFormat("YYYY");
+      const groupedResult = {
+        // 按年分组后的数据集合
+        map: timeSeriesObject.groupByFormat("YYYY"),
+        // 返回数据集合的键，即年，组成的数组
+        years: function() {
+          return _.keys(this.map);
+        },
+        // 统计某一年内的 price 总和
+        sum: function(year) {
+          return _.sumBy(this.map[year], "price");
+        },
+        // 统计某一年内 平均每天的 price
+        average: function(year) {
+          const dates = this.map[year];
+
+          const sum = this.sum(year);
+
+          return sum / dates.length;
+        }
+      };
+      return groupedResult;
+    },
+    dates: function() {
+      return this.groupByDate().dates();
+    },
+    weeks: function() {
+      return this.groupByWeek().weeks();
+    },
+    months: function() {
+      return this.groupByMonth().months();
+    },
+    years: function() {
+      return this.groupByYear().years();
+    },
+    // 统计某一时间段内的总和
+    sum: function(unit, point) {
+      switch (unit) {
+        case "date":
+          return this.groupByDate().sum(point);
+
+        case "week":
+          return this.groupByWeek().sum(point);
+
+        case "month":
+          return this.groupByMonth().sum(point);
+
+        case "year":
+          return this.groupByYear().sum(point);
+      }
+    },
+    // 统计某一时间段内的平均值
+    average: function(unit, point) {
+      switch (unit) {
+        case "week":
+          return this.groupByWeek().average(point);
+
+        case "month":
+          return this.groupByMonth().average(point);
+
+        case "year":
+          return this.groupByYear().average(point);
+      }
+    }
+  };
+  return timeSeriesObject;
+}
+
+const timeSeries = createTimeSeries(transactions);
+console.log(timeSeries.sum("month", "2018-03")); //=> 192.75
+console.log(timeSeries.average("month", "2018-03")); //=> 96.375
+```

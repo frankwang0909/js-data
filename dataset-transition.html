@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<script src="./lodash.min.js"></script>
+</head>
+
+<body>
+	<h1>数据集的转换：行式数据集与列式数据集的相互转换</h1>
+	<script>
+		const object = {
+			name: "Bill Gates",
+			title: "Engineer",
+			subject: "Computer Science"
+		};
+
+		const pairs = _.toPairs(object);
+		console.log(pairs);
+
+
+
+		// 检查是否有新字段
+		function applyColumn(colDataset, columnName) {
+			if (!_.has(colDataset, columnName)) {
+				colDataset[columnName] = [];
+			}
+
+			return colDataset;
+		}
+
+		// 1. 行式数据集转换成列式数据集
+		function rowOriented2ColOriented(rowDataset) {
+			let colDataset = {};
+
+			rowDataset.forEach(function (row, i) {
+				const columnNames = _.keys(row);
+
+				columnNames.forEach(function (columnName) {
+					colDataset = applyColumn(colDataset, columnName);
+					colDataset[columnName][i] = row[columnName];
+				});
+			});
+
+			return colDataset;
+		}
+
+		// Row-oriented Dataset 行式数据集
+		const empsRows = [
+			{
+				RowId: "001",
+				EmpId: "10",
+				Lastname: "Smith",
+				Firstname: "Joe",
+				Salary: 40000
+			},
+			{
+				RowId: "002",
+				EmpId: "12",
+				Lastname: "Jones",
+				Firstname: "Mary",
+				Salary: 50000
+			},
+			{
+				RowId: "003",
+				EmpId: "11",
+				Lastname: "Johnson",
+				Firstname: "Cathy",
+				Salary: 44000
+			},
+			{
+				RowId: "004",
+				EmpId: "22",
+				Lastname: "Jones",
+				Firstname: "Bob",
+				Salary: 55000
+			},
+			{
+				RowId: "005",
+				EmpId: "24",
+				Lastname: "Steve",
+				Firstname: "Mike",
+				Salary: 62000
+			}
+		];
+
+		const transformedDataset = rowOriented2ColOriented(empsRows);
+
+		console.log(transformedDataset);
+		//=> {
+		//  RowId: [ '001', '002', '003', '004', '005' ],
+		//  EmpId: [ '10', '12', '11', '22', '24' ],
+		//  Lastname: [ 'Smith', 'Jones', 'Johnson', 'Jones', 'Steve' ],
+		//  Firstname: [ 'Joe', 'Mary', 'Cathy', 'Bob', 'Mike' ],
+		//  Salary: [ 40000, 50000, 44000, 55000, 62000 ]
+		// }
+
+
+		// 2. 列式数据集转行式数据集
+		function colOriented2RowOriented(colDataset) {
+			const columnNames = _.keys(colDataset);
+
+			const n = _.max(
+				columnNames.map(function (colName) {
+					return colDataset[colName].length;
+				})
+			);
+
+			const rowDataset = [];
+
+			for (let i = 0; i < n; ++i) {
+				const row = {};
+
+				columnNames.forEach(function (colName) {
+					if (!_.isNil(colDataset[colName][i])) {
+						row[colName] = colDataset[colName][i];
+					}
+				});
+
+				rowDataset[i] = row;
+			}
+
+			return rowDataset;
+		}
+		// 列式数据集
+		const empsColumns = {
+			RowId: ['001', '002', '003', '004', '005'],
+			EmpId: ['10', '12', '11', '22', '24'],
+			Lastname: ['Smith', 'Jones', 'Johnson', 'Jones', 'Steve'],
+			Firstname: ['Joe', 'Mary', 'Cathy', 'Bob', 'Mike'],
+			Salary: [40000, 50000, 44000, 55000, 62000]
+		};
+		const rowDataset = colOriented2RowOriented(empsColumns)
+
+		console.log(rowDataset)
+		//=> [
+		//   { RowId: '001', EmpId: '10', Lastname: 'Smith', Firstname: 'Joe', Salary: 40000 },
+		//   { RowId: '002', EmpId: '12', Lastname: 'Jones', Firstname: 'Mary', Salary: 50000 },
+		//   { RowId: '003', EmpId: '11', Lastname: 'Johnson', Firstname: 'Cathy', Salary: 44000 },
+		//   { RowId: '004', EmpId: '22', Lastname: 'Jones', Firstname: 'Bob', Salary: 55000 },
+		//   { RowId: '005', EmpId: '24', Lastname: 'Steve', Firstname: 'Mike', Salary: 62000 }
+		// ]
+	</script>
+</body>
+
+</html>

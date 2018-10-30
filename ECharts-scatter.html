@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>ECharts-based-basic-charts</title>
+  <style>
+    /* CSS */
+    #chart {
+      width: 600px;
+      height: 400px;
+    }
+  </style>
+  <script src="./echarts.js"></script>
+</head>
+<h1>基于 ECharts 的基础表达性统计图表: 散点图 Scatter</h1>
+<!-- HTML -->
+<div id="chart"></div>
+<script>
+  const students = [];
+  const n = 50;
+
+  const heightRanges = {
+    male: [155, 180],
+    female: [145, 170]
+  };
+
+  function getRandomInt(min, max) {
+    return Math.round(min + Math.random() * (max - min));
+  }
+
+  for (let i = 0; i < 50; i++) {
+    const gender = Math.random() > 0.5 ? "male" : "female";
+    const [min, max] = heightRanges[gender];
+
+    const student = {
+      id: i + 1,
+      gender: gender,
+      height: getRandomInt(min, max)
+    };
+
+    students.push(student);
+  }
+
+  console.log(students);
+
+
+  const empsRows = [
+    {
+      RowId: "001",
+      EmpId: "10",
+      Lastname: "Smith",
+      Firstname: "Joe",
+      Salary: 40000
+    },
+    {
+      RowId: "002",
+      EmpId: "12",
+      Lastname: "Jones",
+      Firstname: "Mary",
+      Salary: 50000
+    },
+    {
+      RowId: "003",
+      EmpId: "11",
+      Lastname: "Johnson",
+      Firstname: "Cathy",
+      Salary: 44000
+    },
+    {
+      RowId: "004",
+      EmpId: "22",
+      Lastname: "Jones",
+      Firstname: "Bob",
+      Salary: 55000
+    },
+    {
+      RowId: "005",
+      EmpId: "24",
+      Lastname: "Steve",
+      Firstname: "Mike",
+      Salary: 62000
+    }
+  ];
+
+  const option = {
+    dataset: {
+      source: empsRows
+    },
+    xAxis: {
+      type: "category"
+    },
+    yAxis: {
+      type: "value"
+    },
+    series: {
+      type: "scatter",
+      symbolSize: function (empsRows) {
+        return empsRows.Salary / 2000;
+      },
+      encode: {
+        x: "Firstname",
+        y: "Salary"
+      }
+    }
+  };
+  // const option = {
+  //   dataset: {
+  //     source: students
+  //   },
+  //   xAxis: {
+  //     type: "category",
+  //     name: "学号",
+  //     nameLocation: "middle",
+  //     nameGap: 30
+  //   },
+  //   yAxis: {
+  //     type: "value",
+  //     scale: true,
+  //     name: "身高",
+  //     nameLocation: "end"
+  //   },
+  //   series: {
+  //     type: "scatter",
+  //     encode: {
+  //       x: "id",
+  //       y: "height"
+  //     },
+  //     symbolSize: function (students) {
+  //       return students.height / 10;
+  //     },
+  //   },
+  //   visualMap: {
+  //     type: "piecewise", // piecewise 表示的是分段式，continuous 则为连续式
+  //     dimension: "gender",
+  //     pieces: [
+  //       { value: "male", label: "男生", color: "#1890ff" },
+  //       { value: "female", label: "女生", color: "#f5222d" }
+  //     ],
+  //     orient: "horizontal"
+  //   }
+  // };
+
+  const chartEl = document.querySelector('#chart');
+  const myChart = echarts.init(chartEl);
+  myChart.setOption(option);
+</script>
+
+<body>
+
+</body>
+
+</html>

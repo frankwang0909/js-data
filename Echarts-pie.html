@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>ECharts-based-basic-charts</title>
+  <style>
+    /* CSS */
+    #chart {
+      width: 600px;
+      height: 400px;
+    }
+  </style>
+  <script src="./echarts.js"></script>
+</head>
+<h1>基于 ECharts 的基础表达性统计图表: 饼图 Pie</h1>
+<!-- HTML -->
+<div id="chart"></div>
+<script>
+  const N = [];
+  const P = [];
+  const n = 4;
+
+  function getRandomInt(min, max) {
+    return Math.round(min + Math.random() * (max - min));
+  }
+
+  for (let i = 0; i < n; ++i) {
+    N.push(getRandomInt(1000, 1500));
+    P.push(getRandomInt(85, 100) / 100);
+  }
+
+  console.log(N); //=> [ 1395, 1318, 1447, 1437 ]
+  console.log(P); //=> [ 0.96, 0.89, 0.98, 0.99 ]
+
+  const schools = [];
+
+  for (let i = 0; i < n; ++i) {
+    schools.push({
+      name: String.fromCharCode(65 + i),
+      N: N[i],
+      P: P[i]
+    });
+  }
+  console.log(schools);
+
+  const option = {
+    dataset: {
+      source: schools
+    },
+    series: {
+      type: "pie",
+      label: {
+        formatter: "{@name}: {@N} ({d}%)"
+      },
+      encode: {
+        value: "N",
+        itemName: "name"
+      }
+    }
+  };
+
+  const chartEl = document.querySelector('#chart');
+  const myChart = echarts.init(chartEl);
+  myChart.setOption(option);
+
+</script>
+
+<body>
+
+</body>
+
+</html>

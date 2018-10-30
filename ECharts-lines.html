@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>ECharts-based-basic-charts</title>
+  <style>
+    /* CSS */
+    #chart {
+      width: 600px;
+      height: 400px;
+    }
+  </style>
+  <script src="./echarts.js"></script>
+</head>
+<h1>基于 ECharts 的基础表达性统计图表: 折线图 Lines</h1>
+<!-- HTML -->
+<div id="chart"></div>
+<script>
+  const X = [100];
+  const X2 = [100];
+  const n = 50 - 1;
+  const r = 0.1;
+
+  function randomCoefficient(r) {
+    const rand = Math.random();
+    const coefficient = (rand - 0.5) * 2 * r;
+
+    return coefficient;
+  }
+
+  function getRandomTimeSeires(arr) {
+    for (let i = 0; i < n; ++i) {
+      const coefficient = randomCoefficient(r);
+      const newValue = parseFloat((arr[i] * (1 + coefficient)).toFixed(2));
+      arr.push(newValue);
+    }
+  }
+
+  getRandomTimeSeires(X);
+  getRandomTimeSeires(X2);
+
+
+  console.log(X); //=> [ 100, 95.23, ... ]
+  console.log(X2); //=> [ 100, 95.23, ... ]
+
+  // const data = X.map(function (x, i) {
+  //   return { time: i + 1, value: x };
+  // });
+  var times = X.map(function (x, i) {
+    return i + 1;
+  })
+  console.log(times);
+
+  const option = {
+    title: {
+      text: '某楼盘销售情况',
+      subtext: '纯属虚构'
+    },
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['意向', '成交']
+    },
+    toolbox: {
+      show: true,
+      feature: {
+        magicType: {
+          show: true,
+          type: ['stack', 'tiled']
+        },
+        saveAsImage: { show: true }
+      }
+    },
+    xAxis: {
+      type: 'category',
+      name: '时间',
+      nameLocation: 'middle',
+      nameGap: 30,
+      boundaryGap: false,
+      data: times
+    },
+    yAxis: {
+      type: 'value',
+      scale: true,
+      name: '套数',
+      nameLocation: 'end'
+    },
+    series: [{
+      name: '意向',
+      type: 'line',
+      smooth: true,
+      data: X
+    },
+    {
+      name: '成交',
+      type: 'line',
+      smooth: true,
+      data: X2
+    },]
+  }
+
+  const chartEl = document.querySelector('#chart');
+  const myChart = echarts.init(chartEl);
+  myChart.setOption(option);
+</script>
+
+<body>
+
+</body>
+
+</html>

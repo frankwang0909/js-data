@@ -579,6 +579,9 @@ console.log(timeSeries.average("month", "2018-03")); //=> 96.375
 
 ```js
 function createTimeSeries(timeSeriesArray) {
+  // 缓存对象
+  const caches = {};
+
   const timeSeriesObject = {
     // 将时间戳转换为 Moment 类的对象
     array: timeSeriesArray.map(function(item) {
@@ -587,9 +590,18 @@ function createTimeSeries(timeSeriesArray) {
     }),
     // 抽象出按不同时间格式分组的方法
     groupByFormat: function(formatPattern) {
-      return _.groupBy(this.array, function(item) {
-        return item.moment.format(formatPattern);
+      // 首先检查 `caches` 对象中是否存在当前 `formatPattern` 的结果缓存
+      if (caches[formatPattern]) {
+        return caches[formatPattern];
+      }
+      const result = _.groupBy(timeSeriesObject.array, function(data) {
+        return data.moment.format(formatPattern);
       });
+
+      // 缓存结果
+      caches[formatPattern] = result;
+
+      return result;
     },
     // 按天分组
     groupByDate: function() {

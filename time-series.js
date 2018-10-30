@@ -373,8 +373,8 @@ function createTimeSeries(timeSeriesArray) {
       if (caches[formatPattern]) {
         return caches[formatPattern];
       }
-      const result = _.groupBy(timeSeriesObj.array, function(data) {
-        return data.moment.format(formatPattern);
+      const result = _.groupBy(timeSeriesObject.array, function(item) {
+        return item.moment.format(formatPattern);
       });
 
       // 缓存结果
@@ -519,6 +519,6 @@ function createTimeSeries(timeSeriesArray) {
   return timeSeriesObject;
 }
 
-const timeSeries = createTimeSeries(transactions);
-console.log(timeSeries.sum("month", "2018-03")); //=> 192.75
-console.log(timeSeries.average("month", "2018-03")); //=> 96.375
+// const timeSeries = createTimeSeries(transactions);
+// console.log(timeSeries.sum("month", "2018-03")); //=> 192.75
+// console.log(timeSeries.average("month", "2018-03")); //=> 96.375

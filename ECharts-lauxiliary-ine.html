@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>ECharts-based-basic-charts</title>
+  <style>
+    /* CSS */
+    #chart {
+      width: 800px;
+      height: 600px;
+    }
+  </style>
+  <script src="./echarts.js"></script>
+  <script src="./lodash.min.js"></script>
+</head>
+<h1>基于 ECharts 的基础表达性统计图表: 辅助线</h1>
+<!-- HTML -->
+<div id="chart"></div>
+<script>
+  // const data = [50, 61, 56, 46, 72, 53];
+  // // 平均数
+  // const mean = data.reduce((left, right) => left + right) / data.length;
+  // console.log(mean);
+
+  // const option = {
+  //   dataset: {
+  //     source: data.map((y, i) => ({
+  //       x: i + 1,
+  //       y
+  //     }))
+  //   },
+  //   xAxis: {
+  //     type: "category"
+  //   },
+  //   yAxis: {
+  //     type: "value"
+  //   },
+  //   series: {
+  //     type: "bar",
+  //     encode: {
+  //       x: "x",
+  //       y: "y"
+  //     },
+  //     markLine: {
+  //       // data: [
+  //       //   {
+  //       //     name: "平均线",
+  //       //     yAxis: mean
+  //       //   }
+  //       // ]
+  //       data: [
+  //         { name: "平均值", type: "average" },
+  //         { name: "最大值", type: "max" },
+  //         { name: "最小值", type: "min" }
+  //       ]
+  //     }
+  //   }
+  // };
+
+
+  const X = [100];
+  const n = 50 - 1;
+  const r = 0.1;
+
+  function randomCoefficient(r) {
+    const rand = Math.random();
+    const coefficient = (rand - 0.5) * 2 * r;
+
+    return coefficient;
+  }
+
+  function getRandomTimeSeires(arr) {
+    for (let i = 0; i < n; ++i) {
+      const coefficient = randomCoefficient(r);
+      const newValue = parseFloat((arr[i] * (1 + coefficient)).toFixed(2));
+      arr.push(newValue);
+    }
+  }
+
+  getRandomTimeSeires(X);
+
+  console.log(X); //=> [ 100, 95.23, ... ]
+
+  const data = X.map(function (x, i) {
+    return { time: i + 1, value: x };
+  });
+
+  // const option = {
+  //   dataset: {
+  //     source: data
+  //   },
+  //   xAxis: {
+  //     type: "value",
+  //     name: "i",
+  //     nameLocation: "middle",
+  //     nameGap: 25
+  //   },
+  //   yAxis: {
+  //     type: "value",
+  //     scale: true,
+  //     name: "x",
+  //     nameLocation: "end"
+  //   },
+  //   series: {
+  //     type: "line",
+  //     encode: {
+  //       x: "time",
+  //       y: "value"
+  //     }
+  //   }
+  // };
+
+  // 计算标准差
+  function sd(array) {
+    const mean = _.mean(array);
+
+    const top = array
+      .map(function (x) {
+        return Math.pow(x - mean, 2);
+      })
+      .reduce(function (left, right) {
+        return left + right;
+      });
+    const bottom = array.length - 1;
+
+    return Math.sqrt(top / bottom);
+  }
+
+  const mean_X = _.mean(X);
+  const sd_X = sd(X);
+
+  const ucl = mean_X + 3 * sd_X;
+  const lcl = mean_X - 3 * sd_X;
+
+  const areaA = [
+    [mean_X + 2 * sd_X, mean_X + 3 * sd_X],
+    [mean_X - 3 * sd_X, mean_X - 2 * sd_X]
+  ];
+  const areaB = [
+    [mean_X + sd_X, mean_X + 2 * sd_X],
+    [mean_X - 2 * sd_X, mean_X - sd_X]
+  ];
+  const areaC = [[mean_X - sd_X, mean_X + sd_X]];
+  const option = {
+    dataset: {
+      source: data
+    },
+    xAxis: {
+      type: "value",
+      name: "i",
+      nameLocation: "middle",
+      nameGap: 25
+    },
+    yAxis: {
+      type: "value",
+      name: "x",
+      nameLocation: "end",
+      // max: Math.ceil(Math.max(ucl + 5, Math.max(...X))),
+      // min: Math.floor(Math.min(lcl - 5, Math.min(...X)))
+      scale: true
+    },
+    series: {
+      type: "line",
+      encode: {
+        x: "time",
+        y: "value"
+      },
+      markLine: {
+        data: [
+          { name: "UCL", yAxis: ucl },
+          { name: "Area B", yAxis: areaB[0][1] },
+          { name: "Area C", yAxis: areaC[0][1] },
+          { name: "Mean", yAxis: mean_X },
+          { name: "Area C", yAxis: areaC[0][0] },
+          { name: "Area B", yAxis: areaB[1][0] },
+          { name: "LCL", yAxis: lcl }
+        ]
+      }
+    },
+    visualMap: {
+      top: 0, right: 0, // visualMap 图例位置
+      pieces: [
+      /* Area A */ { gt: areaA[0][0], lte: areaA[0][1], color: '#cc0033' },
+      /* Area B */ { gt: areaB[0][0], lte: areaB[0][1], color: '#ffde33' },
+      /* Area C */ { gt: areaC[0][0], lte: areaC[0][1], color: '#096' },
+      /* Area B */ { gt: areaB[1][0], lte: areaB[1][1], color: '#ffde33' },
+      /* Area A */ { gt: areaA[1][0], lte: areaA[1][1], color: '#cc0033' }
+      ]
+    }
+  };
+  const chartEl = document.querySelector("#chart");
+  const myChart = echarts.init(chartEl);
+  myChart.setOption(option);
+
+</script>
+
+<body>
+
+</body>
+
+</html>

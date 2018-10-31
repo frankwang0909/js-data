@@ -363,13 +363,14 @@ function randomCoefficient(r) {
   return coefficient;
 }
 
-for (let i = 0; i < n; ++i) {
-  const coefficient = randomCoefficient(r);
-  const newValue = X[i] * (1 + coefficient);
-
-  X.push(newValue);
+function getRandomTimeSeires(arr) {
+  for (let i = 0; i < n; ++i) {
+    const coefficient = randomCoefficient(r);
+    const newValue = parseFloat((arr[i] * (1 + coefficient)).toFixed(2));
+    arr.push(newValue);
+  }
 }
-
+getRandomTimeSeires(X);
 console.log(X); //=> [ 100, 95.23, ... ]
 
 const data = X.map(function(x, i) {
@@ -777,6 +778,321 @@ const option = {
       value: "N",
       itemName: "name"
     }
+  }
+};
+```
+
+## 7. 辅助线
+
+在我们进行可视化图表开发的时候经常会发现，如果仅仅将数据使用`数据系列`展示在图表上的话，是没办法非常直观地展示所有数据信息的。而这个时候，`辅助线`便成了帮助开发人员和分析人员更好地利用可视化图表的强有力工具。
+
+### 7.1 辅助线基本操作
+
+在 ECharts 中辅助线并不是一种独立的数据类型，它需要依附在某一个数据系列上以表示其与该数据系列的关系。
+
+假设我们有以下数据集，并将其绘制成一个简单的柱状图。
+
+```js
+const data = [50, 61, 56, 46, 72, 53];
+const option = {
+  dataset: {
+    source: data.map((y, i) => ({
+      x: i + 1,
+      y
+    }))
+  },
+  xAxis: {
+    type: "category"
+  },
+  yAxis: {
+    type: "value"
+  },
+  series: {
+    type: "bar",
+    encode: {
+      x: "x",
+      y: "y"
+    }
+  }
+};
+const chartEl = document.querySelector("#chart");
+const myChart = echarts.init(chartEl);
+myChart.setOption(option);
+```
+
+通过非常简单的计算，得出这一组数据的平均数。
+
+```js
+const mean = data.reduce((left, right) => left + right) / data.length;
+console.log(mean); //=> 56.333333333333336
+```
+
+如果需要将这个计算结果展示在图表上，那么根据目前所设定的坐标系可知我们需要添加一条横向的水平线，而这条水平线的纵向位置应该为 y 坐标轴上该数值所对应的位置。
+
+在 ECharts 中需要在对应的`数据系列`上添加一个 `markLine`配置，并在 `markLine.data` 中添加一个 `yAxis` 值为对应平均值的配置。
+
+```js
+const option = {
+  dataset: {
+    source: data.map((y, i) => ({
+      x: i + 1,
+      y
+    }))
+  },
+  xAxis: {
+    type: "category"
+  },
+  yAxis: {
+    type: "value"
+  },
+  series: {
+    type: "bar",
+    encode: {
+      x: "x",
+      y: "y"
+    },
+    markLine: {
+      data: [
+        {
+          name: "平均线",
+          yAxis: mean
+        }
+      ]
+    }
+  }
+};
+```
+
+### 7.2 ECharts 的自带辅助线
+
+除了我们可以自行计算目标辅助线的数值以外，ECharts 自身也提供了一些比较常用的辅助线，比如 `平均值`，`最大值` 和 `最小值`。
+
+```js
+const option = {
+    dataset: {
+      source: data.map((y, i) => ({
+        x: i + 1,
+        y
+      }))
+    },
+    xAxis: {
+      type: "category"
+    },
+    yAxis: {
+      type: "value"
+    },
+    series: {
+      type: "bar",
+      encode: {
+        x: "x",
+        y: "y"
+      },
+      markLine: {
+        data: [
+          { name: "平均值", type: "average" },
+          { name: "最大值", type: "max" },
+          { name: "最小值", type: "min" }
+        ]
+      }
+    }
+  };
+};
+```
+
+### 7.3 辅助线高级用法
+
+#### 7.3.1 SPC 控制图
+
+在传统的统计学领域中，有一种广泛用于工业生产的统计方法——质量管理。在工业生产领域中，企业为了能够稳定且长期地发展产品的质量和销量，必须要对产品生产过程中的各种数据进行监控和分析，比如生产原料、成本、产品特性、质量指标、销量等等。
+
+而其中成本和质量指标直接关系到了企业的长期生存条件，所以对这些数据的监控和分析则显得尤为重要。其中有一种名为 `SPC 控制图`的数据可视化图表的应用非常广泛，它通过对数据进行计算并将计算结果作为辅助线绘制在图表上。这些辅助线可以帮助数据分析人员非常直观地看到数据中的总体状况和突发的异常情况等。
+
+`SPC 控制图`事实上是多种控制图表的总称，但其核心都是相似的。`SPC 控制图`主要通过计算三个控制线：`UCL`（控制上限）、`CL`（中心线）和 `LCL`（控制下限）。在一些情况下还可以将控制图的`上下限的中间区域`分为 6 等份，并分别标记为控制 A 区、B 区以及 C 区，并通过`记录数据点落在这三个控制区域的数量`来对数据的稳定性进行直观的判定。
+
+![SPC 控制图](https://user-gold-cdn.xitu.io/2018/10/26/166ae6040e8e262f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+#### 7.3.2 建立数据集
+
+假设我们通过随机方法生成一组数值数据，并将其绘制到`折线图`上。
+
+```js
+const X = [100];
+const n = 50 - 1;
+const r = 0.1;
+
+function randomCoefficient(r) {
+  const rand = Math.random();
+  const coefficient = (rand - 0.5) * 2 * r;
+
+  return coefficient;
+}
+
+for (let i = 0; i < n; ++i) {
+  const coefficient = randomCoefficient(r);
+  const newValue = X[i] * (1 + coefficient);
+
+  X.push(newValue);
+}
+
+console.log(X); //=> [ 100, 95.23, ... ]
+
+const data = X.map(function(x, i) {
+  return { time: i + 1, value: x };
+});
+
+const option = {
+  dataset: {
+    source: data
+  },
+  xAxis: {
+    type: "value",
+    name: "i",
+    nameLocation: "middle",
+    nameGap: 25
+  },
+  yAxis: {
+    type: "value",
+    scale: true,
+    name: "x",
+    nameLocation: "end"
+  },
+  series: {
+    type: "line",
+    encode: {
+      x: "time",
+      y: "value"
+    }
+  }
+};
+```
+
+#### 7.3.3 计算 SPC 控制图的必要数值
+
+SPC 控制图所使用的数据主要需要计算数据的`平均值`和`标准差`（Standard deviation，并非标准误 Standard error）。平均值的计算我们使用 Lodash 中的 `_.mean()` 即可，但 Lodash 并没有提供`标准差`的计算方法，所以我们这里也需要自行实现一下标准差的计算方法。
+
+概率论中`方差`用来度量随机变量和其数学期望（即均值）之间的偏离程度。统计中的`方差（样本方差）`是`每个样本值`与全体样本值的`平均数`之差的平方值的`平均数`。
+
+标准差（Standard Deviation）：又常称`均方差`，是`方差`的算术平方根，用 `σ` 表示。标准差能反映一个数据集的离散程度。
+
+其实方差与标准差都是反映一个数据集的离散程度，只是由于方差出现了平方项造成量纲的倍数变化，无法直观反映出偏离程度，于是出现了标准差。
+
+$$ \overline{x} = \frac{\sum^{N}*{i=1} x*i}{N} \\ $$
+$$ \sigma = \sqrt{\frac{\sum^{N}*{i=1}(x*i - \overline{x})^2}{N - 1}} $$
+
+```js
+function sd(array) {
+  const mean = _.mean(array);
+
+  const top = array
+    .map(function(x) {
+      return Math.pow(x - mean, 2);
+    })
+    .reduce(function(left, right) {
+      return left + right;
+    });
+  const bottom = array.length - 1;
+
+  return Math.sqrt(top / bottom);
+}
+```
+
+计算所得数据的平均值和标准差后，便可以计算 SPC 控制图中的 UCL 和 LCL 控制值了。UCL 和 LCL 的值分别为以下：
+
+$$ UCL = \overline{x} + 3 \times \sigma \\ $$
+$$ LCL = \overline{x} - 3 \times \sigma $$
+
+SPC 控制图可以将从 LCL 到 UCL 中间的区域等分为 6 份，显然可以得出控制区域的区间为以下：
+
+$$
+A = \left\{
+\begin{array}{lr}
+[\overline{x} + 2 * \sigma, \overline{x} + 3 * \sigma], & \\
+[\overline{x} - 3 * \sigma, \overline{x} - 2 * \sigma] &  
+ \end{array}
+\right. \\
+$$
+
+$$ B = \left\{
+\begin{array}{lr}
+[\overline{x} + \sigma, \overline{x} + 2 * \sigma], & \\
+[\overline{x} - 2 * \sigma, \overline{x} - \sigma] &  
+ \end{array}
+\right. \\
+$$
+$$ C = [\overline{x} - \sigma, \overline{x} + \sigma] $$
+
+ECharts 提供了一个非常实用的工具 `visualMap`。它可以将图表中`某一个区域内的元素统一为一种颜色`，这正好可以应用到 SPC 控制图的三个控制区域上。
+
+首先我们需要计算所需要的数据。
+
+```js
+const mean_X = _.mean(X);
+const sd_X = sd(X);
+
+const ucl = mean_X + 3 * sd_X;
+const lcl = mean_X - 3 * sd_X;
+
+const areaA = [
+  [mean_X + 2 * sd_X, mean_X + 3 * sd_X],
+  [mean_X - 3 * sd_X, mean_X - 2 * sd_X]
+];
+const areaB = [
+  [mean_X + sd_X, mean_X + 2 * sd_X],
+  [mean_X - 2 * sd_X, mean_X - sd_X]
+];
+const areaC = [[mean_X - sd_X, mean_X + sd_X]];
+```
+
+#### 7.3.4 绘制 SPC 控制图
+
+首先我们将控制线通过 `markLine` 组件绘制在图表上。
+
+```js
+const option = {
+  // ...
+
+  yAxis: {
+    type: "value",
+    name: "x",
+    nameLocation: "end",
+    max: Math.max(ucl + 5, Math.max(...X)),
+    min: Math.min(lcl - 5, Math.min(...X))
+  },
+
+  series: {
+    // ...
+
+    markLine: {
+      data: [
+        { name: "UCL", yAxis: ucl },
+        { name: "Area B", yAxis: areaB[0][1] },
+        { name: "Area C", yAxis: areaC[0][1] },
+        { name: "Mean", yAxis: mean_X },
+        { name: "Area C", yAxis: areaC[0][0] },
+        { name: "Area B", yAxis: areaB[1][0] },
+        { name: "LCL", yAxis: lcl }
+      ]
+    }
+  }
+};
+```
+
+然后，再结合 `visualMap`，便可以将完整的 SPC 控制图绘制出来了。
+
+```js
+const option = {
+  // ...
+
+  visualMap: {
+    top: 10,
+    right: 10, // visualMap 图例位置
+    pieces: [
+      /* Area A */ { gt: areaA[0][0], lte: areaA[0][1], color: "#cc0033" },
+      /* Area B */ { gt: areaB[0][0], lte: areaB[0][1], color: "#ffde33" },
+      /* Area C */ { gt: areaC[0][0], lte: areaC[0][1], color: "#096" },
+      /* Area B */ { gt: areaB[1][0], lte: areaB[1][1], color: "#ffde33" },
+      /* Area A */ { gt: areaA[1][0], lte: areaA[1][1], color: "#cc0033" }
+    ]
   }
 };
 ```
